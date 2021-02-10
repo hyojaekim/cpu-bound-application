@@ -1,4 +1,9 @@
-# CPU bound application
+# CPU Bound Application
+
+## I/O Burst vs CPU Burst, I/O Bound vs CPU Bound
+
+- **I/O Burst** : I/O를 하는 시간을 의미하며, I/O Burst가 많은 것을 **I/O Bound Application**
+- **CPU Burst** : CPU를 사용하는 시간을 의미하며, CPU Burst가 많은 것을 **CPU Bound Application**
 
 ## Artillery로 성능 측정하기
 
