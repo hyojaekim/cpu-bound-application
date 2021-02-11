@@ -38,7 +38,7 @@ scenarios:
 ![Scale up 후, 테스트](./img/scale-up-test.png)
 
 - `e2-micro(vCPU 2개, 1GB 메모리)` -> `e2-highmem-8(vCPU 8개, 64GB 메모리)`
-- `duration:360, arrivalRate:2`로 설정하니 안정적으로 트래픽을 받을 수 있었다.
+- `duration:360, arrivalRate:2`로 설정 후, 안정적으로 트래픽을 받을 수 있었다.
 - 튀는 구간이 있는데 이는 VM을 사용하기 때문에 어쩔 수 없는 것 같다. PM과 달리 VM은 인접한 인스턴스와 자원을 공유하기 때문에 이런 현상이 발생할 수 있다.
 
 ### 성능 테스트하기 위한 기준 만들기
@@ -59,3 +59,16 @@ scenarios:
 - 실제 벤치마크를 잴 때 **p99와 p95 두가지 그래프를 많이 그린다.**
   p99는 대부분 트래픽이 해당되기 때문에 실제 애플리케이션 성능에 가깝기 때문이다.
 - max는 네트워크는 상당히 불안정한 존재이기 때문에 전체 성능 측정 결과에 영향을 미치는 것이 바람직하지 않다.
+
+## Docker 이미지로 만들어 배포하기
+
+![docker](./img/docker.png)
+
+1. dockerfile을 빌드하면 docker 이미지가 된다. (로컬 환경)
+   - Build 명령어 `docker build -t 사용자이름/저장소이름 .`
+2. 이미지를 저장소(dockerhub)에 push하면 해당 저장소에 업로드 된다.
+   - Push 명령어 `docker push 사용자이름/저장소이름`
+3. 저장소에 있는 이미지를 pull하면 이미지가 다운로드 된다. (GCP Instance)
+   - Pull 명령어 `docker pull 사용자이름/저장소이름`
+4. 다운로드 된 이미지를 run하면 container가 되어서 비로소 애플리케이션이 실행된다.
+   - Run 명령어 `docker run -p {HOST_PORT}:{CONTAINER_PORT} 사용자이름/저장소이름`
