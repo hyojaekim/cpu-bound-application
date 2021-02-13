@@ -72,3 +72,21 @@ scenarios:
    - Pull 명령어 `docker pull 사용자이름/저장소이름`
 4. 다운로드 된 이미지를 run하면 container가 되어서 비로소 애플리케이션이 실행된다.
    - Run 명령어 `docker run -p {HOST_PORT}:{CONTAINER_PORT} 사용자이름/저장소이름`
+    
+### Jenkins를 통해 Dockerized Application 배포 자동화하기
+
+* Jenkinks 인스턴스, Worker 인스턴스 2개 만들기
+* Jenkins에서 개인키와 공개키를 쌍으로 만들어 Worker 인스턴스 메타데이터에 공개키를 넣어준다.
+    * 대칭키: 암호화에 사용하는 키와 복호화에 사용하는 키가 같은 것.
+    * 비대칭키: 암호화에 사용하는 키와 복호화에 사용하는 키가 다른 것. (다른 값이지만 연관되어 있는 값이다)
+* Publish over SSH 작성하기
+* 배포 스크립트 작성
+
+### 적용하면서 발생했던 문제들
+1. `bash: docker: command not found` - 도커가 설치되지 않아서 발생하는 오류
+    * `sudo yum install docker`
+    * `sudo systemctl start docker`
+2. `/var/run/docker.sock: connect: permission denied` - docker.sock 권한 문제
+    * `sudo chmod 666 /var/run/docker.sock`
+3. `Jenkins에서 톰캣이 띄워졌지만, 빨간색 그래프나 시계가 계속 도는 현상` - Jenkins에서 배포가 끝나지 않았다고 인식하는 문제
+    * 백그라운드로 실행이 필요 `nohup docker run -p 80:8080 사용자이름/저장소이름 > /dev/null 2>^&1 &`
