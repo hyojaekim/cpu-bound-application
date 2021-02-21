@@ -47,6 +47,9 @@ scenarios:
 - 기대 Latency를 만족할 때까지 성능 테스트하기
   - 단일 요청 레이턴시가 기대 레이턴시보다 높다면, Scale-out으로 해결되지 않는다. 따라서 코드가 비효율적이나, I/O가 병목이거나, 네트워크에서 레이턴시가 발생할 수 있다. 따라서 다양한 부분들을 고려할 수 있어야 한다.
 - Scale-out해도 성능이 늘지 않으면 병목을 의심하자.
+- 처음에는 짧은 시간으로 적은 TPS로 시작 -> TPS를 조금씩 올려서 언제부터 짧은 시간조차 버티지 못하는지 확인하기
+- 서비스 Peak 시간에 유입되는 트래픽을 버틸 수 있는 수준까지 테스트가 필요하다.
+- 짧은 시간 매우 높은 트래픽을 견딜 수 있는 서버 개수나 저장소, 코드 병목을 찾았다면 스트레스 테스트 시간을 아주 길게 테스트해보자. (장기적으로 자원이 고갈되는 상태일 수 있기 때문)
 
 ### 그래프 각 선의 의미
 
@@ -90,3 +93,38 @@ scenarios:
     * `sudo chmod 666 /var/run/docker.sock`
 3. `Jenkins에서 톰캣이 띄워졌지만, 빨간색 그래프나 시계가 계속 도는 현상` - Jenkins에서 배포가 끝나지 않았다고 인식하는 문제
     * 백그라운드로 실행이 필요 `nohup docker run -p 80:8080 사용자이름/저장소이름 > /dev/null 2>^&1 &`
+    
+## 인스턴스가 n개일 때, 처리 가능한 TPS 비교
+
+### Docker container 우아하게(?) 종료하기
+
+- [graceful shutdown](https://github.com/hyojaekim/TIL/blob/master/2021/2021-02-21.md)
+- `docker ps | grep {이미지 이름}` 현재 실행중인 애플리케이션 확인하기
+- `docker container kill -s 15 {Container ID}` `-s 15` 옵션으로 우아하게 종료(애플리케이션이 실행중인 일을 모두 처리하고 종료한다.)
+
+### Case 1. 인스턴스가 3개일 때
+
+1. `360s - instance:3, ArrivalRate:1`
+   ![stress test 1](./img/stress-test-1.png)
+2. `360s - instance:3, ArrivalRate:8`
+   ![stress test 2](./img/stress-test-2.png)
+3. `360s - instance:3, ArrivalRate:16`
+   ![stress test 3](./img/stress-test-3.png)
+
+> ArrivalRate(vuser) 1 ~ 8은 모든 요청에 대해 튀는 구간이 발생하지만, 정상적으로 응답한다.
+> ArrivalRate(vuser) 16부터 300ms 까지 정상적으로 응답하다가, 300ms 이후로부터 500, 502 에러가 발생한다.
+
+- [500, 502 차이](https://github.com/hyojaekim/TIL/blob/master/2021/2021-02-21.md)
+ 
+### Case 2. 인스턴스 3개일 때, 2개를 내렸다가 다시 올렸을 때
+
+1. `1번`, `2번`, `3번` 인스턴스가 살아있는지 확인하기 (모든 애플리케이션이 살아있는 상태에서 진행)
+2. 스트레스 테스트 진행 (360s - instance:3, ArrivalRate:2)
+3. `1번`, `2번` 인스턴스에서 애플리케이션 종료시키기
+4. 재배포하기
+
+![stress test 4](./img/stress-test-4.png)
+
+> 중간에 튀는 구간이 2개의 인스턴스를 종료시켰을 때로 예상된다.
+> 하지만 모든 요청을 200으로, 정상적인 응답을 받을 수 있다는 것을 볼 수 있다. 
+> 2개의 인스턴스를 종료시켰음에도 불구하고 처리할 수 있었던 이유는 정상적으로 무중단 배포가 이루어졌음을 알 수 있다.
